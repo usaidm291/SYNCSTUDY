@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/firebase/config';
-import { collection, addDoc, deleteDoc, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, onSnapshot, query, where, doc } from 'firebase/firestore';
 
 interface PlannerEvent {
   id: string;
