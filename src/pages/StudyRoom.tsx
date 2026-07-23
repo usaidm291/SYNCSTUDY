@@ -1,12 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { db } from '@/firebase/config';
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, limit } from 'firebase/firestore';
+
+interface Message {
+  id: string;
+  text: string;
+  userId: string;
+  userName: string;
+  createdAt: any;
+}
 
 export function StudyRoom() {
   const { user } = useAuth();
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
   const [subject, setSubject] = useState('Deep Work');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Timer Logic
   useEffect(() => {
     let interval: any = null;
     if (isActive && timeLeft > 0) {
@@ -15,10 +29,37 @@ export function StudyRoom() {
       }, 1000);
     } else if (timeLeft === 0) {
       setIsActive(false);
-      // Play sound or show notification
     }
     return () => clearInterval(interval);
   }, [isActive, timeLeft]);
+
+  // Chat Logic
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, 'roomChat'), orderBy('createdAt', 'asc'), limit(50));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Message[];
+      setMessages(msgs);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !user) return;
+    
+    await addDoc(collection(db, 'roomChat'), {
+      text: newMessage,
+      userId: user.uid,
+      userName: user.displayName || 'Anonymous',
+      createdAt: serverTimestamp()
+    });
+    setNewMessage('');
+  };
 
   const toggleTimer = () => setIsActive(!isActive);
   
@@ -41,12 +82,8 @@ export function StudyRoom() {
         <h1 className="text-3xl font-bold tracking-tight">Shared Study Room</h1>
         <div className="flex gap-4">
           <div className="flex -space-x-4">
-            {/* User Avatars */}
             <div className="w-10 h-10 rounded-full border-2 border-background bg-primary text-primary-foreground flex items-center justify-center font-bold z-10">
               {user?.displayName?.charAt(0) || 'U'}
-            </div>
-            <div className="w-10 h-10 rounded-full border-2 border-background bg-secondary text-secondary-foreground flex items-center justify-center font-bold">
-              P
             </div>
           </div>
           <button className="px-4 py-2 bg-secondary rounded-full text-sm font-semibold hover:bg-secondary/80">
@@ -66,7 +103,6 @@ export function StudyRoom() {
           />
 
           <div className="relative w-80 h-80 flex items-center justify-center">
-            {/* Circular Progress Ring */}
             <svg className="absolute inset-0 w-full h-full -rotate-90">
               <circle cx="160" cy="160" r="150" className="stroke-muted fill-none" strokeWidth="8" />
               <circle 
@@ -104,22 +140,30 @@ export function StudyRoom() {
           {/* Room Chat */}
           <div className="bg-card border border-border rounded-2xl p-4 h-96 flex flex-col shadow-sm">
             <h3 className="font-semibold mb-4 border-b border-border pb-2">Room Chat</h3>
-            <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-              {/* Messages placeholder */}
-              <div className="text-xs text-center text-muted-foreground">Partner joined the room</div>
-              <div className="bg-secondary/50 p-3 rounded-lg rounded-tl-none self-start max-w-[80%]">
-                <p className="text-sm">Ready for the 50m session?</p>
-              </div>
-              <div className="bg-primary/10 text-primary p-3 rounded-lg rounded-tr-none self-end ml-auto max-w-[80%]">
-                <p className="text-sm">Let's go! 🚀</p>
-              </div>
+            <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
+              {messages.map(msg => {
+                const isMe = msg.userId === user?.uid;
+                return (
+                  <div key={msg.id} className={`p-3 rounded-lg text-sm max-w-[80%] ${isMe ? 'bg-primary/10 text-primary rounded-tr-none self-end ml-auto' : 'bg-secondary/50 rounded-tl-none self-start'}`}>
+                    {!isMe && <div className="text-xs font-bold mb-1 opacity-50">{msg.userName}</div>}
+                    <p>{msg.text}</p>
+                  </div>
+                );
+              })}
+              <div ref={messagesEndRef} />
             </div>
-            <div className="flex gap-2">
-              <input type="text" placeholder="Type a message..." className="flex-1 rounded-full bg-background border border-input px-4 py-2 text-sm focus:outline-none focus:border-primary" />
-              <button className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90">
+            <form onSubmit={sendMessage} className="flex gap-2">
+              <input 
+                type="text" 
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type a message..." 
+                className="flex-1 rounded-full bg-background border border-input px-4 py-2 text-sm focus:outline-none focus:border-primary" 
+              />
+              <button type="submit" className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity">
                 ↗
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </div>

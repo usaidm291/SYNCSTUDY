@@ -1,28 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { db } from '@/firebase/config';
+import { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
 
 interface Task {
   id: string;
   title: string;
   completed: boolean;
   priority: 'low' | 'medium' | 'high';
+  createdAt?: any;
 }
 
 export function Tasks() {
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: '1', title: 'Review Calculus notes', completed: false, priority: 'high' },
-    { id: '2', title: 'Finish React project setup', completed: true, priority: 'medium' },
-  ]);
+  const { user } = useAuth();
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
+  const [priority, setPriority] = useState<'low'|'medium'|'high'>('medium');
 
-  const addTask = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, 'tasks'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const tasksData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Task[];
+      setTasks(tasksData);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  const addTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTask.trim()) return;
-    setTasks([...tasks, { id: Date.now().toString(), title: newTask, completed: false, priority: 'medium' }]);
+    if (!newTask.trim() || !user) return;
+    
+    await addDoc(collection(db, 'tasks'), {
+      title: newTask,
+      completed: false,
+      priority,
+      userId: user.uid,
+      createdAt: serverTimestamp()
+    });
     setNewTask('');
   };
 
-  const toggleTask = (id: string) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  const toggleTask = async (id: string, currentStatus: boolean) => {
+    await updateDoc(doc(db, 'tasks', id), { completed: !currentStatus });
+  };
+
+  const deleteTask = async (id: string) => {
+    await deleteDoc(doc(db, 'tasks', id));
   };
 
   const priorityColors = {
@@ -45,6 +72,15 @@ export function Tasks() {
               placeholder="What needs to be done?"
               className="flex-1 rounded-lg border border-input bg-background px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
+            <select 
+              value={priority} 
+              onChange={(e) => setPriority(e.target.value as any)}
+              className="rounded-lg border border-input bg-background px-4 py-3 focus:outline-none"
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
             <button type="submit" className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:opacity-90 transition-opacity">
               Add Task
             </button>
@@ -57,8 +93,8 @@ export function Tasks() {
               <input 
                 type="checkbox" 
                 checked={task.completed}
-                onChange={() => toggleTask(task.id)}
-                className="w-5 h-5 rounded border-input bg-background text-primary focus:ring-primary"
+                onChange={() => toggleTask(task.id, task.completed)}
+                className="w-5 h-5 rounded border-input bg-background text-primary focus:ring-primary cursor-pointer"
               />
               <span className={`flex-1 font-medium ${task.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                 {task.title}
@@ -66,7 +102,10 @@ export function Tasks() {
               <span className={`px-2 py-1 rounded text-xs font-semibold ${priorityColors[task.priority]}`}>
                 {task.priority.toUpperCase()}
               </span>
-              <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all">
+              <button 
+                onClick={() => deleteTask(task.id)}
+                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all p-2"
+              >
                 Delete
               </button>
             </div>
