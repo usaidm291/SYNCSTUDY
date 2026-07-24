@@ -51,7 +51,14 @@ export function Partner() {
     
     const partnerId = inviteSnap.data().senderId;
     
-    // Update both users to be partners
+    // Create a dedicated room before linking both users. The deterministic ID is
+    // shared only by this exact pair, so messages cannot bleed into another room.
+    const partnershipId = [user.uid, partnerId].sort().join('_');
+    await setDoc(doc(db, 'partnerships', partnershipId), {
+      memberIds: [user.uid, partnerId],
+      active: true,
+      createdAt: new Date().toISOString()
+    });
     await setDoc(doc(db, 'users', user.uid), { partnerId }, { merge: true });
     await setDoc(doc(db, 'users', partnerId), { partnerId: user.uid }, { merge: true });
     // Update invite status
@@ -194,3 +201,4 @@ export function Partner() {
     </div>
   );
 }
+

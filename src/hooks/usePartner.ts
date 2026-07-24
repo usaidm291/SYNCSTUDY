@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/firebase/config';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 interface PartnerInfo {
   partnerId: string | null;
   partnerName: string;
   partnerEmail: string;
-  partnershipId: string | null; // sorted combo of both UIDs for scoping shared data
+  partnershipId: string | null;
 }
 
 export function usePartner() {
@@ -23,32 +23,38 @@ export function usePartner() {
   useEffect(() => {
     if (!user) { setLoading(false); return; }
 
-    // Listen to current user's doc for partnerId changes
-    const unsubUser = onSnapshot(doc(db, 'users', user.uid), async (snap) => {
+    const unsubUser = onSnapshot(doc(db, 'users', user.uid), (snap) => {
       if (!snap.exists() || !snap.data().partnerId) {
         setPartnerInfo({ partnerId: null, partnerName: '', partnerEmail: '', partnershipId: null });
         setLoading(false);
         return;
       }
 
-      const partnerId = snap.data().partnerId;
-      // Generate a deterministic partnershipId from both UIDs
-      const partnershipId = [user.uid, partnerId].sort().join('_');
+      const pid = snap.data().partnerId;
+      const pshipId = [user.uid, pid].sort().join('_');
 
-      // Listen to partner's doc
-      const unsubPartner = onSnapshot(doc(db, 'users', partnerId), (partnerSnap) => {
-        if (partnerSnap.exists()) {
+      // Fetch partner data (one-time, not nested listener)
+      getDoc(doc(db, 'users', pid)).then((partnerSnap) => {
+        // A connection is valid only when both users still point at each other.
+        // This prevents a previous partner from being treated as active after a
+        // disconnect or a partially-completed connection.
+        if (partnerSnap.exists() && partnerSnap.data().partnerId === user.uid) {
           setPartnerInfo({
-            partnerId,
+            partnerId: pid,
             partnerName: partnerSnap.data().displayName || 'Partner',
             partnerEmail: partnerSnap.data().email || '',
-            partnershipId,
+            partnershipId: pshipId,
+          });
+        } else {
+          setPartnerInfo({
+            partnerId: null,
+            partnerName: '',
+            partnerEmail: '',
+            partnershipId: null,
           });
         }
         setLoading(false);
       });
-
-      return () => unsubPartner();
     });
 
     return () => unsubUser();
@@ -56,3 +62,5 @@ export function usePartner() {
 
   return { ...partnerInfo, loading, hasPartner: !!partnerInfo.partnerId };
 }
+
+

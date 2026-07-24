@@ -37,7 +37,7 @@ export function StudyRoom() {
 
   // Chat Logic — scoped to the partnership
   useEffect(() => {
-    if (!user || !partnershipId) return;
+    if (!user || !partnershipId) { setMessages([]); return; }
     const chatCollection = collection(db, 'partnerships', partnershipId, 'messages');
     const q = query(chatCollection, orderBy('createdAt', 'asc'), limit(100));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -190,3 +190,4 @@ export function StudyRoom() {
     </div>
   );
 }
+

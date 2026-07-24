@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { usePartner } from '@/hooks/usePartner';
 import { db } from '@/firebase/config';
 import { collection, addDoc, updateDoc, doc, onSnapshot, query, where, serverTimestamp } from 'firebase/firestore';
 
@@ -14,13 +15,16 @@ interface Habit {
 
 export function Habits() {
   const { user } = useAuth();
+  const { hasPartner, partnerId, partnerName } = usePartner();
+  const [dataView, setDataView] = useState<'mine' | 'partner'>('mine');
+  const ownerId = dataView === 'partner' ? partnerId : user?.uid;
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
   
   useEffect(() => {
-    if (!user) return;
-    const q = query(collection(db, 'habits'), where('userId', '==', user.uid));
+    if (!ownerId) { setHabits([]); return; }
+    const q = query(collection(db, 'habits'), where('userId', '==', ownerId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const habitsData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -29,11 +33,11 @@ export function Habits() {
       setHabits(habitsData);
     });
     return () => unsubscribe();
-  }, [user]);
+  }, [ownerId]);
 
   const addHabit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newHabitName.trim() || !user) return;
+    if (!newHabitName.trim() || !user || dataView !== 'mine') return;
     
     await addDoc(collection(db, 'habits'), {
       name: newHabitName,
@@ -49,6 +53,7 @@ export function Habits() {
   };
 
   const incrementStreak = async (habit: Habit) => {
+    if (dataView !== 'mine') return;
     const newStreak = habit.streak + 1;
     const newLongest = newStreak > habit.longest ? newStreak : habit.longest;
     await updateDoc(doc(db, 'habits', habit.id), {
@@ -65,7 +70,7 @@ export function Habits() {
           <p className="text-muted-foreground">Build consistency day by day.</p>
         </div>
         <button 
-          onClick={() => setIsAdding(!isAdding)}
+          onClick={() => dataView === 'mine' && setIsAdding(!isAdding)}
           className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:opacity-90"
         >
           {isAdding ? 'Cancel' : '+ New Habit'}
@@ -88,7 +93,8 @@ export function Habits() {
         </form>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {hasPartner && <div className="flex gap-1 bg-secondary p-1 rounded-lg mb-6 w-fit"><button onClick={() => setDataView('mine')} className={`px-3 py-1.5 rounded-md text-sm ${dataView === 'mine' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>My habits</button><button onClick={() => setDataView('partner')} className={`px-3 py-1.5 rounded-md text-sm ${dataView === 'partner' ? 'bg-background shadow-sm' : 'text-muted-foreground'}`}>{partnerName}'s habits</button></div>}
+      {dataView === 'partner' && <p className="text-sm text-muted-foreground mb-4">Viewing {partnerName}'s habits. They are read-only.</p>}      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {habits.map(habit => (
           <div key={habit.id} className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between group hover:border-foreground/20 transition-colors">
             <div className="flex justify-between items-start mb-6">
@@ -102,6 +108,7 @@ export function Habits() {
                 </div>
               </div>
               <button 
+                disabled={dataView === 'partner'}
                 onClick={() => incrementStreak(habit)}
                 className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors cursor-pointer"
                 title="Mark completed today"
@@ -138,3 +145,5 @@ export function Habits() {
     </div>
   );
 }
+
+
