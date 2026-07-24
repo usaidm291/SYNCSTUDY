@@ -74,7 +74,7 @@ export function Dashboard() {
     if (!user || !partnershipId) return;
     const chatCollection = collection(db, 'partnerships', partnershipId, 'messages');
     await addDoc(chatCollection, {
-      text: `⏰ Reminder: Don't forget to "${taskTitle}"!`,
+      text: `Reminder: Don't forget to "${taskTitle}"!`,
       userId: user.uid,
       userName: user.displayName || 'Partner',
       createdAt: serverTimestamp()

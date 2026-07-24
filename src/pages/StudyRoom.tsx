@@ -166,7 +166,7 @@ export function StudyRoom() {
                     return (
                       <div key={msg.id} className={`p-3 rounded-lg text-sm max-w-[80%] ${isMe ? 'bg-primary/10 text-primary rounded-tr-none self-end ml-auto' : 'bg-secondary/50 rounded-tl-none self-start'}`}>
                         {!isMe && <div className="text-xs font-bold mb-1 opacity-50">{msg.userName}</div>}
-                        <p>{msg.text}</p>
+                        <p>{msg.text.replace(/\uFFFD/g, '"')}</p>
                       </div>
                     );
                   })}
@@ -192,6 +192,7 @@ export function StudyRoom() {
     </div>
   );
 }
+
 
 
 

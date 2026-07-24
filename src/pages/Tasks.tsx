@@ -35,7 +35,7 @@ export function Tasks() {
   };
   const sendReminder = async (task: Task) => {
     if (!user || !partnershipId) return;
-    await addDoc(collection(db, 'partnerships', partnershipId, 'messages'), { text: `Reminder: Don't forget to “${task.title}”!`, userId: user.uid, userName: user.displayName || 'Partner', createdAt: serverTimestamp(), type: 'reminder' });
+    await addDoc(collection(db, 'partnerships', partnershipId, 'messages'), { text: `Reminder: Don't forget to "${task.title}"!`, userId: user.uid, userName: user.displayName || 'Partner', createdAt: serverTimestamp(), type: 'reminder' });
   };
 
   return <div className="max-w-4xl mx-auto p-8 animate-in fade-in slide-in-from-bottom-4 duration-500"><div className="mb-6"><BackToDashboard /></div>
