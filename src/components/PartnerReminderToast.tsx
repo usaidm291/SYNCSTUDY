@@ -57,10 +57,11 @@ export function PartnerReminderToast() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-semibold text-foreground">Reminder from {reminder.userName || 'your partner'}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{reminder.text}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{(reminder.text || '').replace(/\uFFFD/g, '"')}</p>
         </div>
         <button onClick={() => setReminder(null)} className="text-muted-foreground hover:text-foreground" aria-label="Dismiss reminder">Dismiss</button>
       </div>
     </div>
   );
 }
+
