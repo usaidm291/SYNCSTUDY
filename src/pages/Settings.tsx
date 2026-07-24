@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { usePartner } from '@/hooks/usePartner';
 import { db } from '@/firebase/config';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
 import { deleteUser } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
 export function Settings() {
   const { user } = useAuth();
+  const { hasPartner, partnerId, partnershipId } = usePartner();
   const navigate = useNavigate();
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -25,7 +27,6 @@ export function Settings() {
     } else if (theme === 'dark') {
       root.classList.add('dark');
     } else {
-      // System preference
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (prefersDark) {
         root.classList.add('dark');
@@ -37,19 +38,29 @@ export function Settings() {
   }, [theme]);
 
   const disconnectPartner = async () => {
-    if (!user) return;
-    if (!window.confirm('Are you sure you want to disconnect from your partner? This cannot be undone.')) return;
-    
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    if (userDoc.exists() && userDoc.data().partnerId) {
-      const partnerId = userDoc.data().partnerId;
-      // Remove partner link from both users
-      await setDoc(doc(db, 'users', user.uid), { partnerId: null }, { merge: true });
-      await setDoc(doc(db, 'users', partnerId), { partnerId: null }, { merge: true });
-      alert('Partner disconnected successfully.');
-    } else {
+    if (!user || !hasPartner || !partnerId) {
       alert('You are not currently connected to a partner.');
+      return;
     }
+    if (!window.confirm('Are you sure? This will disconnect your partner and delete all shared chat messages.')) return;
+
+    // Delete all chat messages in the partnership
+    if (partnershipId) {
+      try {
+        const messagesRef = collection(db, 'partnerships', partnershipId, 'messages');
+        const messagesSnap = await getDocs(messagesRef);
+        const deletePromises = messagesSnap.docs.map(d => deleteDoc(d.ref));
+        await Promise.all(deletePromises);
+        await deleteDoc(doc(db, 'partnerships', partnershipId));
+      } catch {
+        // Partnership doc may not exist yet
+      }
+    }
+
+    // Remove partner link from both users
+    await setDoc(doc(db, 'users', user.uid), { partnerId: null }, { merge: true });
+    await setDoc(doc(db, 'users', partnerId), { partnerId: null }, { merge: true });
+    alert('Partner disconnected. Chat history has been deleted.');
   };
 
   const handleDeleteAccount = async () => {

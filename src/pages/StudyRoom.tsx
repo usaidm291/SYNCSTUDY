@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { usePartner } from '@/hooks/usePartner';
 import { db } from '@/firebase/config';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, limit } from 'firebase/firestore';
 
@@ -13,6 +14,7 @@ interface Message {
 
 export function StudyRoom() {
   const { user } = useAuth();
+  const { hasPartner, partnerName, partnershipId } = usePartner();
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
   const [subject, setSubject] = useState('Deep Work');
@@ -33,29 +35,31 @@ export function StudyRoom() {
     return () => clearInterval(interval);
   }, [isActive, timeLeft]);
 
-  // Chat Logic
+  // Chat Logic — scoped to the partnership
   useEffect(() => {
-    if (!user) return;
-    const q = query(collection(db, 'roomChat'), orderBy('createdAt', 'asc'), limit(50));
+    if (!user || !partnershipId) return;
+    const chatCollection = collection(db, 'partnerships', partnershipId, 'messages');
+    const q = query(chatCollection, orderBy('createdAt', 'asc'), limit(100));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
+      const msgs = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
       })) as Message[];
       setMessages(msgs);
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     });
     return () => unsubscribe();
-  }, [user]);
+  }, [user, partnershipId]);
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !user) return;
+    if (!newMessage.trim() || !user || !partnershipId) return;
     
-    await addDoc(collection(db, 'roomChat'), {
+    const chatCollection = collection(db, 'partnerships', partnershipId, 'messages');
+    await addDoc(chatCollection, {
       text: newMessage,
       userId: user.uid,
-      userName: user.displayName || 'Anonymous',
+      userName: user.displayName || 'You',
       createdAt: serverTimestamp()
     });
     setNewMessage('');
@@ -80,15 +84,18 @@ export function StudyRoom() {
     <div className="min-h-screen bg-background text-foreground flex flex-col p-8">
       <header className="flex justify-between items-center mb-12">
         <h1 className="text-3xl font-bold tracking-tight">Shared Study Room</h1>
-        <div className="flex gap-4">
-          <div className="flex -space-x-4">
+        <div className="flex gap-4 items-center">
+          <div className="flex -space-x-3">
             <div className="w-10 h-10 rounded-full border-2 border-background bg-primary text-primary-foreground flex items-center justify-center font-bold z-10">
               {user?.displayName?.charAt(0) || 'U'}
             </div>
+            {hasPartner && (
+              <div className="w-10 h-10 rounded-full border-2 border-background bg-secondary text-secondary-foreground flex items-center justify-center font-bold">
+                {partnerName.charAt(0) || 'P'}
+              </div>
+            )}
           </div>
-          <button className="px-4 py-2 bg-secondary rounded-full text-sm font-semibold hover:bg-secondary/80">
-            Leave Room
-          </button>
+          {hasPartner && <span className="text-sm text-muted-foreground">with {partnerName}</span>}
         </div>
       </header>
 
@@ -137,33 +144,46 @@ export function StudyRoom() {
 
         {/* Sidebar Tools */}
         <div className="w-full lg:w-96 space-y-6">
-          {/* Room Chat */}
           <div className="bg-card border border-border rounded-2xl p-4 h-96 flex flex-col shadow-sm">
-            <h3 className="font-semibold mb-4 border-b border-border pb-2">Room Chat</h3>
-            <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
-              {messages.map(msg => {
-                const isMe = msg.userId === user?.uid;
-                return (
-                  <div key={msg.id} className={`p-3 rounded-lg text-sm max-w-[80%] ${isMe ? 'bg-primary/10 text-primary rounded-tr-none self-end ml-auto' : 'bg-secondary/50 rounded-tl-none self-start'}`}>
-                    {!isMe && <div className="text-xs font-bold mb-1 opacity-50">{msg.userName}</div>}
-                    <p>{msg.text}</p>
-                  </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
-            <form onSubmit={sendMessage} className="flex gap-2">
-              <input 
-                type="text" 
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..." 
-                className="flex-1 rounded-full bg-background border border-input px-4 py-2 text-sm focus:outline-none focus:border-primary" 
-              />
-              <button type="submit" className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity">
-                ↗
-              </button>
-            </form>
+            <h3 className="font-semibold mb-4 border-b border-border pb-2">
+              {hasPartner ? `Chat with ${partnerName}` : 'Partner Chat'}
+            </h3>
+            
+            {!hasPartner ? (
+              <div className="flex-1 flex items-center justify-center text-center text-muted-foreground p-4">
+                <p>Connect a partner first to start chatting! Go to the Partner page to generate or enter an invite code.</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-2">
+                  {messages.length === 0 && (
+                    <div className="text-xs text-center text-muted-foreground mt-8">No messages yet. Say hi to {partnerName}! 👋</div>
+                  )}
+                  {messages.map(msg => {
+                    const isMe = msg.userId === user?.uid;
+                    return (
+                      <div key={msg.id} className={`p-3 rounded-lg text-sm max-w-[80%] ${isMe ? 'bg-primary/10 text-primary rounded-tr-none self-end ml-auto' : 'bg-secondary/50 rounded-tl-none self-start'}`}>
+                        {!isMe && <div className="text-xs font-bold mb-1 opacity-50">{msg.userName}</div>}
+                        <p>{msg.text}</p>
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+                <form onSubmit={sendMessage} className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type a message..." 
+                    className="flex-1 rounded-full bg-background border border-input px-4 py-2 text-sm focus:outline-none focus:border-primary" 
+                  />
+                  <button type="submit" className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity">
+                    ↗
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
       </div>

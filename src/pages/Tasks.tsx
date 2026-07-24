@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/firebase/config';
-import { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, updateDoc, doc, onSnapshot, query, where, serverTimestamp } from 'firebase/firestore';
 
 interface Task {
   id: string;
@@ -19,12 +19,19 @@ export function Tasks() {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, 'tasks'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
+    // Removed orderBy to avoid requiring a Firestore composite index
+    const q = query(collection(db, 'tasks'), where('userId', '==', user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const tasksData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
+      const tasksData = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
       })) as Task[];
+      // Sort client-side instead
+      tasksData.sort((a, b) => {
+        const aTime = a.createdAt?.toMillis?.() || 0;
+        const bTime = b.createdAt?.toMillis?.() || 0;
+        return bTime - aTime;
+      });
       setTasks(tasksData);
     });
     return () => unsubscribe();
