@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import logo from '@/assets/syncstudy-logo.png';
 import { usePartner } from '@/hooks/usePartner';
-import { auth, db } from '@/firebase/config';
-import { signOut } from 'firebase/auth';
+import { db } from '@/firebase/config';
 import { useNavigate, Link } from 'react-router-dom';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -64,10 +62,7 @@ export function Dashboard() {
     return () => unsubscribe();
   }, [partnerId]);
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    navigate('/');
-  };
+
 
   // Send a reminder to partner via chat
   const sendReminder = async (taskTitle: string) => {
@@ -95,46 +90,7 @@ export function Dashboard() {
   const activeHabits = tab === 'mine' ? habits : partnerHabits;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-border bg-card p-4 hidden md:flex flex-col justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-8"><img src={logo} alt="SyncStudy" className="h-9 w-9 object-contain" /><h2 className="text-2xl font-bold tracking-tight text-primary">SyncStudy</h2></div>
-          <nav className="space-y-2">
-            <Link to="/dashboard" className="flex items-center gap-2 px-3 py-2 rounded-md bg-secondary text-secondary-foreground font-medium">
-              Overview
-            </Link>
-            <Link to="/room" className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground font-medium transition-colors">
-              Study Room
-            </Link>
-            <Link to="/tasks" className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground font-medium transition-colors">
-              Tasks
-            </Link>
-            <Link to="/planner" className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground font-medium transition-colors">
-              Planner
-            </Link>
-            <Link to="/habits" className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground font-medium transition-colors">
-              Habits
-            </Link>
-            <Link to="/analytics" className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground font-medium transition-colors">
-              Analytics
-            </Link>
-            <Link to="/partner" className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground font-medium transition-colors">
-              Partner
-            </Link>
-            <Link to="/settings" className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground font-medium transition-colors">
-              Settings
-            </Link>
-          </nav>
-        </div>
-        <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-destructive transition-colors">
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-          Logout
-        </button>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 p-8 overflow-y-auto">
+    <div className="max-w-6xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
         <header className="flex justify-between items-center mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Welcome back, {user?.displayName || 'Student'}</h1>
@@ -287,7 +243,6 @@ export function Dashboard() {
           </div>
 
         </div>
-      </main>
     </div>
   );
 }
