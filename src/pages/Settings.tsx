@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { BackToDashboard } from '@/components/BackToDashboard';
 import { usePartner } from '@/hooks/usePartner';
 import { db } from '@/firebase/config';
 import { doc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
@@ -80,6 +81,7 @@ export function Settings() {
 
   return (
     <div className="max-w-3xl mx-auto p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="mb-6"><BackToDashboard /></div>
       <h1 className="text-3xl font-bold mb-8 text-foreground">Settings</h1>
 
       <div className="space-y-8">
@@ -188,3 +190,6 @@ export function Settings() {
     </div>
   );
 }
+
+
+

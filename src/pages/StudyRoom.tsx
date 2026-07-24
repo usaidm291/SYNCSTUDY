@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { BackToDashboard } from '@/components/BackToDashboard';
 import { usePartner } from '@/hooks/usePartner';
 import { db } from '@/firebase/config';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, limit } from 'firebase/firestore';
@@ -82,6 +83,7 @@ export function StudyRoom() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col p-8">
+      <div className="mb-6"><BackToDashboard /></div>
       <header className="flex justify-between items-center mb-12">
         <h1 className="text-3xl font-bold tracking-tight">Shared Study Room</h1>
         <div className="flex gap-4 items-center">
@@ -190,4 +192,7 @@ export function StudyRoom() {
     </div>
   );
 }
+
+
+
 

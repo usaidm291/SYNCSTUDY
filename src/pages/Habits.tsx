@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { BackToDashboard } from '@/components/BackToDashboard';
 import { usePartner } from '@/hooks/usePartner';
 import { db } from '@/firebase/config';
 import { collection, addDoc, updateDoc, doc, onSnapshot, query, where, serverTimestamp } from 'firebase/firestore';
@@ -64,6 +65,7 @@ export function Habits() {
 
   return (
     <div className="max-w-4xl mx-auto p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="mb-6"><BackToDashboard /></div>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Habit Tracker</h1>
@@ -145,5 +147,8 @@ export function Habits() {
     </div>
   );
 }
+
+
+
 
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { BackToDashboard } from '@/components/BackToDashboard';
 import { usePartner } from '@/hooks/usePartner';
 import { db } from '@/firebase/config';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -62,6 +63,7 @@ export function Analytics() {
 
   return (
     <div className="max-w-6xl mx-auto p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="mb-6"><BackToDashboard /></div>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Analytics</h1>
@@ -170,3 +172,6 @@ export function Analytics() {
     </div>
   );
 }
+
+
+

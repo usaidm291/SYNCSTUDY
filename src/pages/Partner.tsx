@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { BackToDashboard } from '@/components/BackToDashboard';
 import { usePartner } from '@/hooks/usePartner';
 import { doc, setDoc, getDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
@@ -98,6 +99,7 @@ export function Partner() {
 
   return (
     <div className="max-w-4xl mx-auto p-8 animate-in fade-in zoom-in-95 duration-500">
+      <div className="mb-6"><BackToDashboard /></div>
       <h1 className="text-3xl font-bold mb-2">Partner Connection</h1>
       <p className="text-muted-foreground mb-8">Connect with your study buddy to sync your productivity.</p>
 
@@ -201,4 +203,7 @@ export function Partner() {
     </div>
   );
 }
+
+
+
 

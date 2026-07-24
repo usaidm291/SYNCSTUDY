@@ -12,6 +12,7 @@ import { Analytics } from '@/pages/Analytics';
 import { Settings } from '@/pages/Settings';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { hasFirebaseConfig } from '@/firebase/config';
+import { PartnerReminderToast } from '@/components/PartnerReminderToast';
 
 function SetupRequired() {
   return (
@@ -73,6 +74,7 @@ function App() {
 
   return (
     <Router>
+      <PartnerReminderToast />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
@@ -94,3 +96,5 @@ function App() {
 }
 
 export default App;
+
+
