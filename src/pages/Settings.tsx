@@ -1,9 +1,71 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { db } from '@/firebase/config';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { deleteUser } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 
 export function Settings() {
-  const [theme, setTheme] = useState('dark');
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('syncstudy-theme') || 'dark';
+    }
+    return 'dark';
+  });
   const [notifications, setNotifications] = useState(true);
   const [batterySharing, setBatterySharing] = useState(false);
+
+  // Apply theme on change
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'light') {
+      root.classList.remove('dark');
+    } else if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      // System preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    }
+    localStorage.setItem('syncstudy-theme', theme);
+  }, [theme]);
+
+  const disconnectPartner = async () => {
+    if (!user) return;
+    if (!window.confirm('Are you sure you want to disconnect from your partner? This cannot be undone.')) return;
+    
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    if (userDoc.exists() && userDoc.data().partnerId) {
+      const partnerId = userDoc.data().partnerId;
+      // Remove partner link from both users
+      await setDoc(doc(db, 'users', user.uid), { partnerId: null }, { merge: true });
+      await setDoc(doc(db, 'users', partnerId), { partnerId: null }, { merge: true });
+      alert('Partner disconnected successfully.');
+    } else {
+      alert('You are not currently connected to a partner.');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    if (!window.confirm('Are you absolutely sure? This will permanently delete your account and all your data. This action cannot be undone.')) return;
+    
+    try {
+      // Delete user document
+      await deleteDoc(doc(db, 'users', user.uid));
+      // Delete Firebase Auth account
+      await deleteUser(user);
+      navigate('/');
+    } catch {
+      alert('To delete your account, please log out and log back in first, then try again. (Firebase requires a recent login for this action.)');
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -88,7 +150,10 @@ export function Settings() {
                 <div className="font-medium text-destructive">Disconnect Partner</div>
                 <div className="text-sm text-muted-foreground">Permanently sever the connection with your current partner.</div>
               </div>
-              <button className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md font-semibold hover:opacity-90">
+              <button 
+                onClick={disconnectPartner}
+                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md font-semibold hover:opacity-90"
+              >
                 Disconnect
               </button>
             </div>
@@ -98,7 +163,10 @@ export function Settings() {
                 <div className="font-medium text-destructive">Delete Account</div>
                 <div className="text-sm text-muted-foreground">Permanently delete your account and all data.</div>
               </div>
-              <button className="px-4 py-2 border border-destructive text-destructive bg-background rounded-md font-semibold hover:bg-destructive/10">
+              <button 
+                onClick={handleDeleteAccount}
+                className="px-4 py-2 border border-destructive text-destructive bg-background rounded-md font-semibold hover:bg-destructive/10"
+              >
                 Delete Account
               </button>
             </div>
