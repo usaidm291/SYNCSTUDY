@@ -18,8 +18,34 @@ export function Settings() {
     }
     return 'dark';
   });
-  const [notifications, setNotifications] = useState(true);
+  const [notifications, setNotifications] = useState(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      return Notification.permission === 'granted';
+    }
+    return false;
+  });
   const [batterySharing, setBatterySharing] = useState(false);
+
+  const toggleNotifications = async () => {
+    if (!('Notification' in window)) {
+      alert('This browser does not support desktop notifications');
+      return;
+    }
+
+    if (notifications) {
+      // You can't programmatically revoke permissions, so we just set state
+      // (The user has to manually revoke in browser settings)
+      alert('To completely disable notifications, please block them in your browser settings.');
+      setNotifications(false);
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    setNotifications(permission === 'granted');
+    if (permission !== 'granted') {
+      alert('Notification permission was denied. Please enable it in your browser settings.');
+    }
+  };
 
   // Apply the preference immediately and persist it for every page.
   useEffect(() => {
@@ -110,7 +136,7 @@ export function Settings() {
                   type="checkbox" 
                   className="sr-only" 
                   checked={notifications}
-                  onChange={() => setNotifications(!notifications)}
+                  onChange={toggleNotifications}
                 />
                 <div className={`block w-14 h-8 rounded-full transition-colors ${notifications ? 'bg-primary' : 'bg-muted'}`}></div>
                 <div className={`absolute left-1 top-1 bg-background w-6 h-6 rounded-full transition-transform ${notifications ? 'transform translate-x-6' : ''}`}></div>
