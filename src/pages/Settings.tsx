@@ -12,7 +12,7 @@ export function Settings() {
   const { user } = useAuth();
   const { hasPartner, partnerId, partnershipId } = usePartner();
   const navigate = useNavigate();
-  const [theme, setTheme] = useState(() => {
+  const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
       return getSavedTheme();
     }
@@ -23,7 +23,7 @@ export function Settings() {
 
   // Apply the preference immediately and persist it for every page.
   useEffect(() => {
-    applyTheme(theme as Theme);
+    applyTheme(theme);
   }, [theme]);
 
   const disconnectPartner = async () => {
@@ -85,7 +85,7 @@ export function Settings() {
               </div>
               <select 
                 value={theme}
-                onChange={(e) => setTheme(e.target.value)}
+                onChange={(e) => setTheme(e.target.value as Theme)}
                 className="rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="light">Light</option>
@@ -178,6 +178,7 @@ export function Settings() {
     </div>
   );
 }
+
 
 
 
