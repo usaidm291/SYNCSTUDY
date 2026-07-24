@@ -13,6 +13,7 @@ import { Settings } from '@/pages/Settings';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { hasFirebaseConfig } from '@/firebase/config';
 import { PartnerReminderToast } from '@/components/PartnerReminderToast';
+import logo from '@/assets/syncstudy-logo.png';
 
 function SetupRequired() {
   return (
@@ -48,6 +49,7 @@ function LandingPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4">
       <div className="max-w-4xl w-full text-center space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <img src={logo} alt="SyncStudy logo" className="mx-auto h-24 w-24 object-contain" />
         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight">
           Sync<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">Study</span>
         </h1>
@@ -96,5 +98,6 @@ function App() {
 }
 
 export default App;
+
 
 

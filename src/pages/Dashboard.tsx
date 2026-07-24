@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import logo from '@/assets/syncstudy-logo.png';
 import { usePartner } from '@/hooks/usePartner';
 import { auth, db } from '@/firebase/config';
 import { signOut } from 'firebase/auth';
@@ -98,31 +99,31 @@ export function Dashboard() {
       {/* Sidebar */}
       <aside className="w-64 border-r border-border bg-card p-4 hidden md:flex flex-col justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-primary mb-8">SyncStudy</h2>
+          <div className="flex items-center gap-3 mb-8"><img src={logo} alt="SyncStudy" className="h-9 w-9 object-contain" /><h2 className="text-2xl font-bold tracking-tight text-primary">SyncStudy</h2></div>
           <nav className="space-y-2">
             <Link to="/dashboard" className="flex items-center gap-2 px-3 py-2 rounded-md bg-secondary text-secondary-foreground font-medium">
-              <span>📊</span> Overview
+              Overview
             </Link>
             <Link to="/room" className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground font-medium transition-colors">
-              <span>⏱️</span> Study Room
+              Study Room
             </Link>
             <Link to="/tasks" className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground font-medium transition-colors">
-              <span>✅</span> Tasks
+              Tasks
             </Link>
             <Link to="/planner" className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground font-medium transition-colors">
-              <span>📅</span> Planner
+              Planner
             </Link>
             <Link to="/habits" className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground font-medium transition-colors">
-              <span>🌱</span> Habits
+              Habits
             </Link>
             <Link to="/analytics" className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground font-medium transition-colors">
-              <span>📈</span> Analytics
+              Analytics
             </Link>
             <Link to="/partner" className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground font-medium transition-colors">
-              <span>🤝</span> Partner
+              Partner
             </Link>
             <Link to="/settings" className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground font-medium transition-colors">
-              <span>⚙️</span> Settings
+              Settings
             </Link>
           </nav>
         </div>
@@ -290,3 +291,6 @@ export function Dashboard() {
     </div>
   );
 }
+
+
+

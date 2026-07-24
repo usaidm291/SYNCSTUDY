@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { BackToDashboard } from '@/components/BackToDashboard';
+import { applyTheme, getSavedTheme, type Theme } from '@/lib/theme';
 import { usePartner } from '@/hooks/usePartner';
 import { db } from '@/firebase/config';
 import { doc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
@@ -13,29 +14,16 @@ export function Settings() {
   const navigate = useNavigate();
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('syncstudy-theme') || 'dark';
+      return getSavedTheme();
     }
     return 'dark';
   });
   const [notifications, setNotifications] = useState(true);
   const [batterySharing, setBatterySharing] = useState(false);
 
-  // Apply theme on change
+  // Apply the preference immediately and persist it for every page.
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'light') {
-      root.classList.remove('dark');
-    } else if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (prefersDark) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-    }
-    localStorage.setItem('syncstudy-theme', theme);
+    applyTheme(theme as Theme);
   }, [theme]);
 
   const disconnectPartner = async () => {
@@ -190,6 +178,7 @@ export function Settings() {
     </div>
   );
 }
+
 
 
 
