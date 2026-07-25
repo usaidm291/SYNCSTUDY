@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePartner } from '@/hooks/usePartner';
 import { db } from '@/firebase/config';
 import { useNavigate, Link } from 'react-router-dom';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 
 interface Task {
   id: string;
@@ -20,6 +20,8 @@ export function Dashboard() {
   const [habits, setHabits] = useState<any[]>([]);
   const [partnerTasks, setPartnerTasks] = useState<Task[]>([]);
   const [partnerHabits, setPartnerHabits] = useState<any[]>([]);
+  const [myTimers, setMyTimers] = useState<any[]>([]);
+  const [partnerTimers, setPartnerTimers] = useState<any[]>([]);
   const [tab, setTab] = useState<'mine' | 'partner'>('mine');
 
   // Fetch MY tasks
@@ -36,8 +38,23 @@ export function Dashboard() {
   useEffect(() => {
     if (!user) return;
     const q = query(collection(db, 'habits'), where('userId', '==', user.uid));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setHabits(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const habitList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setHabits(habitList);
+      // Ensure default "Study Hours" habit exists
+      const hasStudy = habitList.some(h => h.name === 'Study Hours');
+      if (!hasStudy) {
+        const studyHabit = {
+          name: 'Study Hours',
+          streak: 0,
+          totalMinutes: 0,
+          targetMinutes: 0,
+          isDefault: true,
+          userId: user.uid,
+          createdAt: serverTimestamp(),
+        };
+        await addDoc(collection(db, 'habits'), studyHabit);
+      }
     });
     return () => unsubscribe();
   }, [user]);
@@ -125,6 +142,33 @@ export function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
           
           <div className="col-span-2 space-y-6">
+            {/* Timers Section */}
+            <div className="bg-card border border-border p-6 rounded-2xl shadow-sm">
+              <h3 className="text-muted-foreground font-medium mb-2">Active Timers</h3>
+              <div className="space-y-3">
+                {(tab === 'mine' ? myTimers : partnerTimers).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No active timers</p>
+                ) : (
+                  (tab === 'mine' ? myTimers : partnerTimers).map(timer => {
+                    const expiresAt = timer.expiresAt?.toDate ? timer.expiresAt.toDate() : null;
+                    const now = new Date();
+                    const remaining = expiresAt ? Math.max(0, expiresAt - now) : null;
+                    const minutes = remaining ? Math.floor(remaining / 60000) : null;
+                    const seconds = remaining ? Math.floor((remaining % 60000) / 1000) : null;
+                    const label = timer.label || 'Timer';
+                    return (
+                      <div key={timer.id} className="flex justify-between items-center p-2 rounded bg-muted/30 border border-border">
+                        <span className="font-medium">{label}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {remaining !== null ? `${minutes}m ${seconds}s` : 'No expiry'}
+                        </span>
+                      </div>
+                    );
+                  })
+                )
+                )}
+              </div>
+            </div>
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-card border border-border p-6 rounded-2xl shadow-sm">

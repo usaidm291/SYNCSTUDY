@@ -1,26 +1,45 @@
 import { useState } from 'react';
 import { usePartner } from '@/hooks/usePartner';
+import { useAuth } from '@/hooks/useAuth';
 import { auth, db } from '@/firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, updateDoc, query, where } from 'firebase/firestore';
 
 export function TimerForm() {
+  const { user } = useAuth();
+
   const { hasPartner, partnershipId } = usePartner();
   const [label, setLabel] = useState('');
   const [duration, setDuration] = useState(''); // minutes as string
 
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!hasPartner || !partnershipId) return;
+    if (!user) return;
     const durationMinutes = parseInt(duration, 10) || null;
     const start = serverTimestamp();
     const expiresAt = durationMinutes ? new Date(Date.now() + durationMinutes * 60 * 1000) : null;
-    await addDoc(collection(db, 'partnerships', partnershipId, 'timers'), {
+    const timerData = {
       label: label || null,
-      durationMinutes: durationMinutes,
+      durationMinutes,
       startTime: start,
       startedBy: auth.currentUser?.uid,
       expiresAt,
-    });
+    };
+    if (hasPartner && partnershipId) {
+      await addDoc(collection(db, 'partnerships', partnershipId, 'timers'), timerData);
+    } else if (user) {
+      await addDoc(collection(db, 'users', user.uid, 'timers'), timerData);
+
+      // Update default Study Hours habit total minutes
+      if (durationMinutes) {
+        const habitQ = query(collection(db, 'habits'), where('userId', '==', user.uid), where('name', '==', 'Study Hours'));
+        const habitSnap = await getDocs(habitQ);
+        if (!habitSnap.empty) {
+          const habitDoc = habitSnap.docs[0];
+          const current = habitDoc.data().totalMinutes || 0;
+          await updateDoc(habitDoc.ref, { totalMinutes: current + durationMinutes });
+        }
+      }
+    }
     setLabel('');
     setDuration('');
   };
