@@ -166,7 +166,7 @@ export function Dashboard() {
                     );
                   })
                 )
-                )}
+                }
               </div>
             </div>
             {/* Stats */}
