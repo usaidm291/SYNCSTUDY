@@ -14,6 +14,7 @@ interface SessionData {
   topics: string[];
   participants: string[];
   userIds: string[]; // for analytics querying
+  timerStartedAt: number | null; // ms timestamp when first topic is added
   timeSpent: Record<string, number>; // uid -> minutes
   userJoinTimes: Record<string, number>; // uid -> timestamp in ms
 }
@@ -72,8 +73,8 @@ export function Session() {
   // Stopwatch timer
   useEffect(() => {
     let interval: any;
-    if (activeSession && user && activeSession.userJoinTimes?.[user.uid]) {
-      const joinTime = activeSession.userJoinTimes[user.uid];
+    if (activeSession && user && activeSession.timerStartedAt) {
+      const joinTime = Math.max(activeSession.userJoinTimes?.[user.uid] || 0, activeSession.timerStartedAt);
       interval = setInterval(() => {
         setElapsedSeconds(Math.floor((Date.now() - joinTime) / 1000));
       }, 1000);
@@ -93,6 +94,7 @@ export function Session() {
       topics: [],
       participants: [user.uid],
       userIds: [user.uid],
+      timerStartedAt: null,
       timeSpent: {},
       userJoinTimes: {
         [user.uid]: Date.now()
@@ -115,17 +117,26 @@ export function Session() {
     e.preventDefault();
     if (!activeSession || !newTopic.trim()) return;
     const sessionRef = doc(db, 'sessions', activeSession.id);
-    await updateDoc(sessionRef, {
+    
+    const updates: any = {
       topics: arrayUnion(newTopic.trim())
-    });
+    };
+    if (!activeSession.timerStartedAt && activeSession.topics.length === 0) {
+      updates.timerStartedAt = Date.now();
+    }
+    
+    await updateDoc(sessionRef, updates);
     setNewTopic('');
   };
 
   const leaveSession = async () => {
     if (!user || !activeSession) return;
     
-    const joinTime = activeSession.userJoinTimes?.[user.uid] || Date.now();
-    const minutesSpent = Math.floor((Date.now() - joinTime) / 60000);
+    let minutesSpent = 0;
+    if (activeSession.timerStartedAt) {
+      const joinTime = Math.max(activeSession.userJoinTimes?.[user.uid] || 0, activeSession.timerStartedAt);
+      minutesSpent = Math.floor((Date.now() - joinTime) / 60000);
+    }
     
     const sessionRef = doc(db, 'sessions', activeSession.id);
     
