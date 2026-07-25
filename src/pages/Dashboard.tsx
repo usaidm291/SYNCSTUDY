@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePartner } from '@/hooks/usePartner';
 import { db } from '@/firebase/config';
 import { useNavigate, Link } from 'react-router-dom';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface Task {
   id: string;
@@ -39,10 +39,10 @@ export function Dashboard() {
     if (!user) return;
     const q = query(collection(db, 'habits'), where('userId', '==', user.uid));
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const habitList = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      const habitList = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
       setHabits(habitList);
       // Ensure default "Study Hours" habit exists
-      const hasStudy = habitList.some(h => h.name === 'Study Hours');
+      const hasStudy = habitList.some((h: any) => h.name === 'Study Hours');
       if (!hasStudy) {
         const studyHabit = {
           name: 'Study Hours',
@@ -79,6 +79,25 @@ export function Dashboard() {
     return () => unsubscribe();
   }, [partnerId]);
 
+  // Fetch MY timers
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, 'users', user.uid, 'timers'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setMyTimers(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  // Fetch PARTNER timers
+  useEffect(() => {
+    if (!hasPartner || !partnershipId) { setPartnerTimers([]); return; }
+    const q = query(collection(db, 'partnerships', partnershipId, 'timers'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setPartnerTimers(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsubscribe();
+  }, [hasPartner, partnershipId]);
 
 
   // Send a reminder to partner via chat
@@ -152,7 +171,7 @@ export function Dashboard() {
                   (tab === 'mine' ? myTimers : partnerTimers).map(timer => {
                     const expiresAt = timer.expiresAt?.toDate ? timer.expiresAt.toDate() : null;
                     const now = new Date();
-                    const remaining = expiresAt ? Math.max(0, expiresAt - now) : null;
+                    const remaining = expiresAt ? Math.max(0, expiresAt.getTime() - now.getTime()) : null;
                     const minutes = remaining ? Math.floor(remaining / 60000) : null;
                     const seconds = remaining ? Math.floor((remaining % 60000) / 1000) : null;
                     const label = timer.label || 'Timer';
