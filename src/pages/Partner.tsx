@@ -125,10 +125,10 @@ export function Partner() {
             <p className="text-muted-foreground">{partnerEmail}</p>
             <div className="flex gap-4 mt-6 justify-center">
               <button 
-                onClick={() => navigate('/room')}
+                onClick={() => navigate('/session')}
                 className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-semibold hover:opacity-90 transition-opacity"
               >
-                Open Study Room
+                Open Session
               </button>
               <button 
                 onClick={disconnectPartner}

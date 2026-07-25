@@ -279,10 +279,10 @@ export function Dashboard() {
                     <p className="text-sm text-muted-foreground">{partnerCompletedTasks}/{partnerTotalTasks} tasks done</p>
                   </div>
                   <button 
-                    onClick={() => navigate('/room')}
+                    onClick={() => navigate('/session')}
                     className="w-full mt-4 py-2 rounded-lg bg-primary/10 text-primary font-semibold hover:bg-primary/20 transition-colors"
                   >
-                    Join Study Room
+                    Open Session
                   </button>
                 </div>
               ) : (

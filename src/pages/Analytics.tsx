@@ -12,6 +12,8 @@ export function Analytics() {
   const [habits, setHabits] = useState<any[]>([]);
   const [partnerTasks, setPartnerTasks] = useState<any[]>([]);
   const [partnerHabits, setPartnerHabits] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [partnerSessions, setPartnerSessions] = useState<any[]>([]);
   const [tab, setTab] = useState<'mine' | 'partner'>('mine');
 
   useEffect(() => {
@@ -28,6 +30,16 @@ export function Analytics() {
     const q = query(collection(db, 'habits'), where('userId', '==', user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setHabits(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  // Fetch MY sessions
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, 'sessions'), where('userIds', 'array-contains', user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setSessions(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return () => unsubscribe();
   }, [user]);
@@ -51,8 +63,19 @@ export function Analytics() {
     return () => unsubscribe();
   }, [partnerId]);
 
+  // Fetch PARTNER sessions
+  useEffect(() => {
+    if (!partnerId) { setPartnerSessions([]); return; }
+    const q = query(collection(db, 'sessions'), where('userIds', 'array-contains', partnerId));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setPartnerSessions(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsubscribe();
+  }, [partnerId]);
+
   const activeTasks = tab === 'mine' ? tasks : partnerTasks;
   const activeHabits = tab === 'mine' ? habits : partnerHabits;
+  const activeSessions = tab === 'mine' ? sessions : partnerSessions;
 
   const totalTasks = activeTasks.length;
   const completedTasks = activeTasks.filter(t => t.completed).length;
@@ -60,6 +83,14 @@ export function Analytics() {
   const totalHabits = activeHabits.length;
   const totalStreakDays = activeHabits.reduce((sum: number, h: any) => sum + (h.streak || 0), 0);
   const bestStreak = activeHabits.length > 0 ? Math.max(...activeHabits.map((h: any) => h.longest || 0)) : 0;
+
+  const targetId = tab === 'mine' ? user?.uid : partnerId;
+  const totalSessionMinutes = activeSessions.reduce((sum: number, s: any) => {
+    const mins = (s.timeSpent && targetId && s.timeSpent[targetId]) || 0;
+    return sum + mins;
+  }, 0);
+  const sessionHours = Math.floor(totalSessionMinutes / 60);
+  const sessionMins = totalSessionMinutes % 60;
 
   return (
     <div className="max-w-6xl mx-auto p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -115,6 +146,17 @@ export function Analytics() {
             <p className="text-xs text-emerald-500 mt-2">Longest habit streak 🔥</p>
           ) : (
             <p className="text-xs text-muted-foreground mt-2">No streaks recorded yet</p>
+          )}
+        </div>
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Study Time</h3>
+          <div className="text-3xl font-bold">
+            {sessionHours}h {sessionMins}m
+          </div>
+          {totalSessionMinutes > 0 ? (
+            <p className="text-xs text-emerald-500 mt-2">Across {activeSessions.length} session{activeSessions.length !== 1 ? 's' : ''}</p>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-2">No sessions completed yet</p>
           )}
         </div>
       </div>
