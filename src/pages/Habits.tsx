@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { BackToDashboard } from '@/components/BackToDashboard';
 import { usePartner } from '@/hooks/usePartner';
 import { db } from '@/firebase/config';
-import { collection, addDoc, updateDoc, doc, onSnapshot, query, where, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 interface Habit {
   id: string;
@@ -12,6 +12,7 @@ interface Habit {
   longest: number;
   icon: string;
   color: string;
+  lastCompletedAt?: Timestamp; // Firestore Timestamp
 }
 
 export function Habits() {
@@ -47,7 +48,8 @@ export function Habits() {
       icon: '🎯',
       color: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20',
       userId: user.uid,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      lastCompletedAt: null
     });
     setNewHabitName('');
     setIsAdding(false);
@@ -55,11 +57,26 @@ export function Habits() {
 
   const incrementStreak = async (habit: Habit) => {
     if (dataView !== 'mine') return;
-    const newStreak = habit.streak + 1;
+    const now = new Date();
+    
+    // Check if was yesterday (or today)
+    const last = habit.lastCompletedAt?.toDate();
+    const isToday = last && last.getFullYear() === now.getFullYear() && last.getMonth() === now.getMonth() && last.getDate() === now.getDate();
+    
+    if (isToday) return; 
+
+    const wasYesterday = last && (
+      (now.getTime() - last.getTime()) < (48 * 60 * 60 * 1000) && 
+      (now.getDate() !== last.getDate())
+    );
+
+    const newStreak = wasYesterday ? habit.streak + 1 : 1;
     const newLongest = newStreak > habit.longest ? newStreak : habit.longest;
+    
     await updateDoc(doc(db, 'habits', habit.id), {
       streak: newStreak,
-      longest: newLongest
+      longest: newLongest,
+      lastCompletedAt: serverTimestamp()
     });
   };
 
@@ -109,14 +126,30 @@ export function Habits() {
                   <p className="text-sm text-muted-foreground">Current Streak: <span className="font-semibold text-foreground">{habit.streak} days</span></p>
                 </div>
               </div>
-              <button 
-                disabled={dataView === 'partner'}
-                onClick={() => incrementStreak(habit)}
-                className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors cursor-pointer"
-                title="Mark completed today"
-              >
-                ✓
-              </button>
+              <div className="flex">
+                <button 
+                  disabled={dataView === 'partner' || (habit.lastCompletedAt && (() => {
+                    const now = new Date();
+                    const last = habit.lastCompletedAt.toDate();
+                    return now.getFullYear() === last.getFullYear() && now.getMonth() === last.getMonth() && now.getDate() === last.getDate();
+                  })())}
+                  onClick={() => incrementStreak(habit)}
+                  className="w-8 h-8 rounded-full border border-border flex items-center justify-center hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors cursor-pointer"
+                  title="Mark completed today"
+                >
+                  ✓
+                </button>
+                <button
+                  disabled={dataView === 'partner'}
+                  onClick={async () => {
+                    await deleteDoc(doc(db, 'habits', habit.id));
+                  }}
+                  className="ml-2 w-8 h-8 rounded-full border border-destructive flex items-center justify-center text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                  title="Delete habit"
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
             
             <div>
