@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { usePartner } from '@/hooks/usePartner';
-import { db } from '@/firebase/config';
+import { auth, db } from '@/firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export function TimerForm() {
@@ -13,15 +13,13 @@ export function TimerForm() {
     if (!hasPartner || !partnershipId) return;
     const durationMinutes = parseInt(duration, 10) || null;
     const start = serverTimestamp();
-    const expiresAt = durationMinutes
-      ? serverTimestamp() // placeholder, will be computed on server via Cloud Function or client after write
-      : null;
+    const expiresAt = durationMinutes ? new Date(Date.now() + durationMinutes * 60 * 1000) : null;
     await addDoc(collection(db, 'partnerships', partnershipId, 'timers'), {
       label: label || null,
       durationMinutes: durationMinutes,
       startTime: start,
-      startedBy: db.auth?.currentUser?.uid,
-      expiresAt: durationMinutes ? null : null, // set later
+      startedBy: auth.currentUser?.uid,
+      expiresAt,
     });
     setLabel('');
     setDuration('');
