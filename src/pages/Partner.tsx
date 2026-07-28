@@ -131,6 +131,12 @@ export function Partner() {
                 Open Session
               </button>
               <button 
+                onClick={() => navigate('/room')}
+                className="px-6 py-2 bg-secondary/50 text-secondary-foreground rounded-lg font-semibold hover:bg-secondary/70 transition-colors"
+              >
+                Study Room
+              </button>
+              <button 
                 onClick={disconnectPartner}
                 className="px-6 py-2 border border-destructive text-destructive rounded-lg font-semibold hover:bg-destructive/10 transition-colors"
               >

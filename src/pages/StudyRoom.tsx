@@ -192,8 +192,3 @@ export function StudyRoom() {
     </div>
   );
 }
-
-
-
-
-

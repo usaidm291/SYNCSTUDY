@@ -5,6 +5,7 @@ import { Dashboard } from '@/pages/Dashboard';
 import { Profile } from '@/pages/Profile';
 import { Partner } from '@/pages/Partner';
 import { Session } from '@/pages/Session';
+import { StudyRoom } from '@/pages/StudyRoom';
 import { Tasks } from '@/pages/Tasks';
 import { Planner } from '@/pages/Planner';
 import { Habits } from '@/pages/Habits';
@@ -86,6 +87,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/partner" element={<Partner />} />
           <Route path="/session" element={<Session />} />
+          <Route path="/room" element={<StudyRoom />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/planner" element={<Planner />} />
           <Route path="/habits" element={<Habits />} />

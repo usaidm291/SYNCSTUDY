@@ -278,12 +278,20 @@ export function Dashboard() {
                     <h4 className="font-bold text-lg">{partnerName}</h4>
                     <p className="text-sm text-muted-foreground">{partnerCompletedTasks}/{partnerTotalTasks} tasks done</p>
                   </div>
-                  <button 
-                    onClick={() => navigate('/session')}
-                    className="w-full mt-4 py-2 rounded-lg bg-primary/10 text-primary font-semibold hover:bg-primary/20 transition-colors"
-                  >
-                    Open Session
-                  </button>
+                  <div className="w-full flex gap-2 mt-4">
+                    <button 
+                      onClick={() => navigate('/session')}
+                      className="flex-1 py-2 rounded-lg bg-primary/10 text-primary font-semibold hover:bg-primary/20 transition-colors"
+                    >
+                      Open Session
+                    </button>
+                    <button 
+                      onClick={() => navigate('/room')}
+                      className="flex-1 py-2 rounded-lg bg-secondary/50 text-secondary-foreground font-semibold hover:bg-secondary/70 transition-colors"
+                    >
+                      Study Room
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center text-center space-y-4">
