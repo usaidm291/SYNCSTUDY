@@ -180,7 +180,7 @@ export function Planner() {
               ))}
             </div>
             <div className="flex-1 grid grid-cols-7 grid-rows-5 lg:grid-rows-auto">
-              {calendarDays.map((day, idx) => {
+              {calendarDays.map((day) => {
                 const dateStr = format(day, 'yyyy-MM-dd');
                 const dayEvents = events.filter(e => e.date === dateStr);
                 const isCurrentMonth = isSameMonth(day, currentDate);
